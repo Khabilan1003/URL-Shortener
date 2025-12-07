@@ -1,0 +1,19 @@
+spring:
+  application:
+    name: urlshortener
+
+  datasource:
+    url: jdbc:postgresql://localhost:5432/system_design
+    username: postgres
+    password: postgres
+
+  jpa:
+    properties:
+      hibernate:
+        default_schema: urlshortener
+
+  flyway:
+    enabled: true
+    schemas: urlshortener
+    default-schema: urlshortener
+    locations: classpath:db/migration

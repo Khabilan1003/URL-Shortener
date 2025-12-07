@@ -1,0 +1,11 @@
+CREATE TABLE SHORT_URL
+(
+    id BIGSERIAL PRIMARY KEY,
+    short_key VARCHAR(10) NOT NULL UNIQUE,
+    original_url TEXT NOT NULL,
+    is_private BOOLEAN NOT NULL DEFAULT FALSE,
+    expires_at TIMESTAMP,
+    created_by VARCHAR(50),
+    click_count BIGINT NOT NULL DEFAULT 0,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
