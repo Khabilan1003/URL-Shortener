@@ -6,11 +6,14 @@ import com.design.urlshortener.model.ShortUrlModel;
 import com.design.urlshortener.repository.ShortUrlRepository;
 import com.design.urlshortener.util.ErrorUtil;
 import com.design.urlshortener.util.MapperUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -18,8 +21,13 @@ import java.util.List;
 @Service
 @Transactional
 public class ShortUrlServiceImpl implements ShortUrlService{
+    private static final Logger log = LoggerFactory.getLogger(ShortUrlServiceImpl.class);
+
     @Autowired
     private ShortUrlRepository shortUrlRepository;
+
+    @Autowired
+    private MemcachedService memcachedService;
 
     @Autowired
     private ErrorUtil errorUtil;
@@ -31,6 +39,19 @@ public class ShortUrlServiceImpl implements ShortUrlService{
     @Override
     public ResponseModel accessShortUrl(String shortUrl) {
         ResponseModel responseModel = new ResponseModel();
+        try {
+            String originalUrlCached = (String) memcachedService.get(shortUrl);
+            log.info("Original Url Cached -> " + originalUrlCached);
+            if(originalUrlCached != null) {
+                ShortUrlModel shortUrlModel1 = new ShortUrlModel();
+                shortUrlModel1.setOriginalUrl(originalUrlCached);
+                responseModel.setData(shortUrlModel1);
+                return responseModel;
+            }
+        } catch (Exception e) {
+            log.error("Cache Get Exception : {}", e.getMessage());
+        }
+
         List<ShortUrl> shortUrlList = shortUrlRepository.findByShortUrl(shortUrl);
         if(shortUrlList.isEmpty()) {
             responseModel.getError().add(errorUtil.resolveErrorCode("UD_001"));
@@ -43,7 +64,13 @@ public class ShortUrlServiceImpl implements ShortUrlService{
             return responseModel;
         }
 
-        responseModel.setData(shortUrl1);
+        try {
+            log.info("Setting up Original Url in Cache");
+            memcachedService.set(shortUrl , shortUrl1.getOriginalUrl() , (int) Math.min(3600, Duration.between(LocalDateTime.now() , shortUrl1.getExpiresAt()).getSeconds()));
+        } catch (Exception e) {
+            log.error("Cache Set Exception : {}", e.getMessage());
+        }
+        responseModel.setData(MapperUtil.convertEntityToModel(shortUrl1));
         return responseModel;
     }
 

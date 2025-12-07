@@ -23,7 +23,7 @@ public class ShortUrlController {
             return new ResponseEntity<>(responseModel , HttpStatus.BAD_REQUEST);
         }
 
-        ShortUrl shortUrl1 = (ShortUrl) responseModel.getData();
+        ShortUrlModel shortUrl1 = (ShortUrlModel) responseModel.getData();
 
         return ResponseEntity
                 .status(HttpStatus.FOUND)
